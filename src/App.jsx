@@ -1,121 +1,78 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React, { useState, useEffect } from 'react';
+// Components
+import Dashboard from './components/Dashboard';
+import SaleForm from './components/SaleForm';
+import BottomNav from './components/Layout/BottomNav';
+// Hooks & Services
+import { useSalesData } from './hooks/useSalesData';
+import { useOnline } from './hooks/useOnline';
+import { syncService } from './services/syncService';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [activeTab, setActiveTab] = useState('home');
+  const [showSaleForm, setShowSaleForm] = useState(false);
+  
+  // Custom hooks for DB data and Internet status
+  const { sales, totalRevenue, txCount, saveSale } = useSalesData();
+  const isOnline = useOnline();
+
+  // SYNC LOGIC: Whenever the phone goes online, trigger the sync service
+  useEffect(() => {
+    if (isOnline) {
+      console.log("App is Online: Checking for pending syncs...");
+      syncService.syncPendingSales();
+    }
+  }, [isOnline, sales]); // Runs when status changes or new sales are added
+
+  // Handler to save a new sale from the Form to IndexedDB
+  const handleSaveNewSale = async (saleData) => {
+    const result = await saveSale(saleData);
+    if (result.success) {
+      setShowSaleForm(false);
+      // If online, try to sync immediately
+      if (isOnline) syncService.syncPendingSales();
+    } else {
+      alert("Error saving sale locally!");
+    }
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="max-w-md mx-auto bg-white min-h-screen relative overflow-x-hidden shadow-2xl">
+      {/* Network Status Toast (Visual proof for judges) */}
+      {!isOnline && (
+        <div className="fixed top-0 left-0 right-0 bg-orange-500 text-white text-[10px] py-1 z-50 text-center font-bold">
+          OFFLINE MODE — DATA SAVING LOCALLY
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      )}
 
-      <div className="ticks"></div>
+      {showSaleForm ? (
+        <SaleForm 
+          onBack={() => setShowSaleForm(false)} 
+          onSave={handleSaveNewSale} 
+        />
+      ) : (
+        <>
+          {activeTab === 'home' && (
+            <Dashboard 
+              onNewSale={() => setShowSaleForm(true)} 
+              transactions={sales}
+              totalRevenue={totalRevenue}
+              txCount={txCount}
+            />
+          )}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+          {activeTab === 'sales' && (
+            <div className="p-10 text-center pt-20">
+              <h2 className="font-bold text-gray-800">Sales History</h2>
+              <p className="text-gray-400 text-sm mt-2">Full history coming soon...</p>
+            </div>
+          )}
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+          <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
+        </>
+      )}
+    </div>
+  );
 }
 
-export default App
+export default App;
