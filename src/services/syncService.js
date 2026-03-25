@@ -1,50 +1,33 @@
-import { db } from '../db/dexie';
+import { useStore } from '../store/useStore';
 
-/**
- * SYNC SERVICE
- * Responsibilities:
- * 1. Find all local sales marked 'synced: 0'
- * 2. Send them to the Mock API
- * 3. Update local DB to 'synced: 1' on success
- */
 export const syncService = {
-  isSyncing: false,
+  performSync: async () => {
+    const { transactions, setVerificationStatus } = useStore.getState();
 
-  async performSync() {
-    // Prevent multiple sync loops running at once
-    if (this.isSyncing) return;
-    
-    const pendingSales = await db.sales.where('synced').equals(0).toArray();
-    
-    if (pendingSales.length === 0) {
-      console.log("✅ All sales are up to date.");
-      return;
-    }
+    // RULE: Sync only completed sales that haven't been synced yet
+    const pendingSales = transactions.filter(
+      (s) => s.status === 'completed' && s.synced === 0
+    );
 
-    this.isSyncing = true;
-    console.log(`📡 Attempting to sync ${pendingSales.length} sales...`);
+    if (pendingSales.length === 0) return;
 
-    for (const sale of pendingSales) {
-      try {
-        // MOCK API CALL - This is where your backend dev's URL goes later
-        const response = await fetch('https://api.mock-paytrack.com/v1/sales', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(sale)
+    try {
+      // POST /api/sales/sync as per Master Prompt
+      const response = await fetch('/api/sales/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sales: pendingSales }),
+      });
+
+      if (response.ok) {
+        const results = await response.json(); 
+        // Backend returns: [{ id: 1, verified: true, provider: "interswitch" }]
+        results.forEach(res => {
+          setVerificationStatus(res.id, res.verified, res.provider);
         });
-
-        // If server accepts it (200 or 201) or if it's a duplicate (409)
-        if (response.ok || response.status === 409) {
-          await db.sales.update(sale.id, { synced: 1 });
-          console.log(`✔ Sale ${sale.id} synced successfully.`);
-        }
-      } catch (error) {
-        console.error(`❌ Sync failed for ${sale.id}. Will retry when connection stabilizes.`);
-        // Stop the loop if there's a network error to save battery/data
-        break; 
       }
+    } catch (error) {
+      console.error("Cloud Sync Failed:", error);
     }
-
-    this.isSyncing = false;
   }
 };

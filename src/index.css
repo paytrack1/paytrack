@@ -47,3 +47,13 @@ button {
   transition-duration: 200ms;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 } 
+
+/* Update your index.css */
+body {
+  margin: 0;
+  /* A soft, professional gray-blue background */
+  background-color: #F1F5F9; 
+  display: flex;
+  justify-content: center; /* Centers the app on big screens */
+  min-height: 100vh;
+}

@@ -1,66 +1,65 @@
-import React, { useEffect, useState } from 'react';
-import { db } from '../db/dexie';
+import React from 'react';
+import { useStore } from '../store/useStore';
+import { BarChart3, ShieldCheck, Percent, Layers } from 'lucide-react';
 
 const Reports = () => {
-  const [reportData, setReportData] = useState({ total: 0, count: 0, avg: 0 });
+  const { sales } = useStore();
 
-  useEffect(() => {
-    const calculateReports = async () => {
-      const sales = await db.sales.toArray();
-      const total = sales.reduce((sum, s) => sum + s.total, 0);
-      const count = sales.length;
-      setReportData({
-        total,
-        count,
-        avg: count > 0 ? (total / count).toFixed(2) : 0
-      });
-    };
-    calculateReports();
-  }, []);
+  const completedSales = sales.filter((s) => s.status === 'completed');
+  const totalRevenue = completedSales.reduce((acc, curr) => acc + (curr.total || 0), 0);
+  const verifiedCount = completedSales.filter((s) => s.verified).length;
+  const draftCount = sales.filter((s) => s.status === 'draft').length;
+  const verificationRate = completedSales.length > 0
+    ? ((verifiedCount / completedSales.length) * 100).toFixed(1)
+    : 0;
 
   return (
-    <div className="bg-[#F5F7FA] min-h-screen pb-32">
-      <div className="p-6 bg-white border-b border-[#E2E8F0]">
-        <h1 className="text-xl font-black text-[#0F172A]">Sales Reports</h1>
+    <div className="space-y-6">
+      <h2 className="text-2xl font-black text-[#0F172A]">Business Reports</h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Total Revenue */}
+        <div className="bg-white p-6 rounded-2xl border border-[#E2E8F0] shadow-sm">
+          <div className="w-10 h-10 bg-[#EEF2FF] text-[#2F5FB3] rounded-xl flex items-center justify-center mb-4">
+            <BarChart3 size={20} />
+          </div>
+          <p className="text-[#64748B] text-xs font-bold uppercase">Total Revenue</p>
+          <h3 className="text-2xl font-black text-[#0F172A]">₦{totalRevenue.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+        </div>
+
+        {/* Verified Transactions */}
+        <div className="bg-white p-6 rounded-2xl border border-[#E2E8F0] shadow-sm">
+          <div className="w-10 h-10 bg-[#DCFCE7] text-[#22C55E] rounded-xl flex items-center justify-center mb-4">
+            <ShieldCheck size={20} />
+          </div>
+          <p className="text-[#64748B] text-xs font-bold uppercase">Verified Transactions</p>
+          <h3 className="text-2xl font-black text-[#0F172A]">
+            {verifiedCount} <span className="text-sm text-[#64748B] font-medium">of {completedSales.length}</span>
+          </h3>
+        </div>
       </div>
 
-      <div className="p-6 grid grid-cols-1 gap-4">
-        {/* Main Stats Card */}
-        <div className="bg-white p-6 rounded-2xl border border-[#E2E8F0] shadow-sm">
-          <p className="text-[#64748B] text-xs font-bold uppercase mb-4">Performance Overview</p>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-[#94A3B8] text-sm font-medium">Total Revenue</span>
-              <span className="text-[#0F172A] font-black text-lg">₦{reportData.total.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-[#94A3B8] text-sm font-medium">Total Sales</span>
-              <span className="text-[#0F172A] font-black text-lg">{reportData.count}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-[#94A3B8] text-sm font-medium">Average Sale</span>
-              <span className="text-[#2F5FB3] font-black text-lg">₦{Number(reportData.avg).toLocaleString()}</span>
-            </div>
-          </div>
+      {/* Verification Rate */}
+      <div className="bg-[#2F5FB3] p-6 rounded-2xl text-white flex items-center justify-between overflow-hidden relative">
+        <div className="relative z-10">
+          <p className="text-blue-100 text-xs font-bold uppercase tracking-widest mb-1">
+            Verification Rate
+          </p>
+          <h3 className="text-4xl font-black">{verificationRate}%</h3>
+          <p className="text-blue-200 text-[10px] mt-2 font-medium italic">
+            Powered by Interswitch Sync Engine
+          </p>
         </div>
+        <Percent className="absolute -right-4 -bottom-4 opacity-10" size={100} />
+      </div>
 
-        {/* Mock Chart Placeholder */}
-        <div className="bg-white p-6 rounded-2xl border border-[#E2E8F0] shadow-sm">
-          <h4 className="text-[#0F172A] font-bold mb-4">Sale Volume (₦k)</h4>
-          <div className="flex items-end justify-between h-32 gap-2">
-            {[40, 70, 45, 90, 65, 80, 30].map((height, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                <div 
-                  className="w-full bg-[#EEF2FF] rounded-t-lg transition-all duration-500" 
-                  style={{ height: `${height}%`, backgroundColor: i === 3 ? '#2F5FB3' : '#EEF2FF' }}
-                />
-                <span className="text-[10px] text-[#94A3B8] font-bold">
-                  {['M', 'T', 'W', 'T', 'F', 'S', 'S'][i]}
-                </span>
-              </div>
-            ))}
-          </div>
+      {/* Draft Summary */}
+      <div className="bg-white p-4 rounded-xl border border-dashed border-[#E2E8F0] flex justify-between items-center">
+        <div className="flex items-center gap-3 text-[#64748B]">
+          <Layers size={18} />
+          <span className="text-sm font-bold">Unsaved Drafts</span>
         </div>
+        <span className="font-black text-[#0F172A]">{draftCount}</span>
       </div>
     </div>
   );
