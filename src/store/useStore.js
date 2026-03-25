@@ -86,7 +86,7 @@ export const useStore = create(
       // ─── SYNC SINGLE SALE to backend ─────────────────
       syncSale: async (sale) => {
         try {
-          const response = await fetch('/api/sales/sync', {
+          const response = await fetch('https://paytrack-lite-backend.onrender.com/api/sales/sync', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sales: [sale] }),
