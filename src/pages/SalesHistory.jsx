@@ -1,11 +1,13 @@
 import React, { useMemo } from 'react';
 import { useStore } from '../store/useStore';
-import { TrendingUp, ShoppingBag } from 'lucide-react';
+import { TrendingUp, ShoppingBag, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const SalesHistory = () => {
-  const { sales } = useStore();
+  const { sales, user } = useStore();
 
   const chartData = useMemo(() => {
     const today = new Date();
@@ -27,9 +29,70 @@ const SalesHistory = () => {
 
   const maxTotal = Math.max(...chartData.map((d) => d.total), 1);
 
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF();
+
+    // Header
+    doc.setFillColor(27, 79, 155);
+    doc.rect(0, 0, 210, 35, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PayTrack Lite', 14, 15);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Sales Report', 14, 23);
+    doc.text(`${user?.businessName || 'My Store'}`, 14, 30);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 120, 23);
+
+    // Summary
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Summary', 14, 50);
+
+    const totalRevenue = sales.reduce((a, s) => a + (s.total || 0), 0);
+    const verifiedCount = sales.filter((s) => s.verified).length;
+    const pendingCount = sales.filter((s) => !s.verified).length;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Total Sales: ${sales.length}`, 14, 60);
+    doc.text(`Total Revenue: N${totalRevenue.toLocaleString()}`, 14, 68);
+    doc.text(`Verified: ${verifiedCount}`, 14, 76);
+    doc.text(`Pending: ${pendingCount}`, 14, 84);
+
+    // Table
+    autoTable(doc, {
+      startY: 95,
+      head: [['Item', 'Amount (N)', 'Payment', 'Status', 'Date']],
+      body: sales.map((s) => [
+        s.itemName || 'General Sale',
+        s.total?.toLocaleString(),
+        s.paymentMethod?.toUpperCase(),
+        s.verified ? 'Verified' : 'Pending',
+        new Date(s.createdAt).toLocaleDateString(),
+      ]),
+      headStyles: { fillColor: [27, 79, 155], fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [240, 244, 255] },
+      styles: { fontSize: 9 },
+    });
+
+    doc.save(`paytrack-sales-${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
+
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-black text-[#0F172A]">Sales History</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-black text-[#0F172A]">Sales History</h2>
+        <button
+          onClick={handleDownloadPDF}
+          className="flex items-center gap-2 bg-[#2F5FB3] text-white px-4 py-2.5 rounded-xl font-black text-sm active:scale-95 transition-all"
+        >
+          <Download size={16} />
+          PDF
+        </button>
+      </div>
 
       <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-sm">
         <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">Last 7 Days</p>
