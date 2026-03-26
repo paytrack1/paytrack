@@ -83,7 +83,7 @@ const Settings = () => {
     },
     {
       label: 'Help & Support',
-      sub: 'support@paytracklite.com',
+      sub: 'paytracklite@gmail.com',
       iconBg: '#FFF7ED',
       action: 'support',
       icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EA580C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
@@ -147,8 +147,8 @@ const Settings = () => {
         <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4">
           <p className="text-orange-800 font-bold text-sm mb-1">Contact Support</p>
           <p className="text-orange-600 text-xs mb-3">Send us an email and we will respond within 24 hours.</p>
-          <a href="mailto:support@paytracklite.com" className="bg-orange-500 text-white text-sm font-bold px-4 py-2 rounded-xl inline-block">
-            support@paytracklite.com
+          <a href="mailto:paytracklite@gmail.com" className="bg-orange-500 text-white text-sm font-bold px-4 py-2 rounded-xl inline-block">
+            paytracklite@gmail.com
           </a>
         </div>
       )}
