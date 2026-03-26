@@ -1,16 +1,43 @@
-# React + Vite
+# PayTrack Lite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An offline-first POS and payment verification app for Nigerian merchants.
 
-Currently, two official plugins are available:
+## Problem
+Nigerian merchants lose money daily to fake transfer screenshots and unverified POS payments.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Solution
+PayTrack Lite lets merchants record every sale offline, then automatically verifies transfers and POS payments through the Interswitch Transaction Search API when online.
 
-## React Compiler
+## Features
+- Record sales offline (works with zero internet)
+- Auto-sync and verify payments via Interswitch API
+- Fake transfer detection
+- Sales history with weekly chart
+- Export sales data as CSV
+- PWA — installable on any device
+- MongoDB cloud backup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
+- Frontend: React, Zustand, Dexie (IndexedDB), TailwindCSS, Vite PWA
+- Backend: Node.js, Express, Mongoose
+- Database: MongoDB Atlas + IndexedDB (offline)
+- Payment Verification: Interswitch Transaction Search API
 
-## Expanding the ESLint configuration
+## Live Links
+- Frontend: https://paytracklite.vercel.app
+- Backend: https://paytrack-lite-backend.onrender.com
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Team
+- Chibueze Ebubechukwu Peter — Full Stack (Frontend + Backend)
+
+## How to Run Locally
+```bash
+# Frontend
+npm install
+npm run dev
+
+# Backend
+cd paytrack-lite-backend
+npm install
+node index.js
+```
