@@ -73,7 +73,7 @@ const Login = () => {
         <img
           src="/login.png"
           alt="Merchant"
-          className="w-full h-full object-cover object-top"
+          className="w-full h-full object-cover object-[20%]"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/10" />
         {/* Overlay card on image */}
@@ -101,7 +101,7 @@ const Login = () => {
 
       {/* MOBILE IMAGE */}
       <div className="md:hidden w-full h-48 relative overflow-hidden">
-        <img src="/login.png" alt="Merchant" className="w-full h-full object-cover object-top" />
+        <img src="/login.png" alt="Merchant" className="w-full h-full object-cover object-[20%]" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white" />
       </div>
 
