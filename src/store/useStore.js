@@ -12,7 +12,13 @@ export const useStore = create(
       login: (email, businessName, password) => {
         set({
           isAuthenticated: true,
-          user: { email, businessName, password, id: `user-${Date.now()}` },
+          user: {
+            email,
+            businessName,
+            password,
+            id: `user-${Date.now()}`,
+            profileImage: null,
+          },
         });
         get().init();
       },
@@ -26,6 +32,12 @@ export const useStore = create(
           activeTab: 'home',
           isSaleModalOpen: false,
         });
+      },
+
+      setProfileImage: (imageBase64) => {
+        set((state) => ({
+          user: { ...state.user, profileImage: imageBase64 },
+        }));
       },
 
       activeTab: 'home',
@@ -56,7 +68,6 @@ export const useStore = create(
           verified: false,
           provider: null,
         };
-
         try {
           await db.sales.add(sale);
           set((state) => ({

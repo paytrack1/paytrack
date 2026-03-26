@@ -12,13 +12,16 @@ const ChevronRight = () => (
 const Settings = () => {
   const { logout, user, setProfileImage } = useStore();
   const [exportStatus, setExportStatus] = useState('');
+  const [showSupport, setShowSupport] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onloadend = () => { setProfileImage(reader.result); };
+    reader.onloadend = () => {
+      setProfileImage(reader.result);
+    };
     reader.readAsDataURL(file);
   };
 
@@ -31,7 +34,16 @@ const Settings = () => {
         return;
       }
       const headers = ['ID', 'Item', 'Total', 'Payment', 'Status', 'Verified', 'Synced', 'Date'];
-      const rows = sales.map((s) => [s.id, s.itemName || 'General Sale', s.total, s.paymentMethod, s.status, s.verified ? 'Yes' : 'No', s.synced === 1 ? 'Yes' : 'No', new Date(s.createdAt).toLocaleString()]);
+      const rows = sales.map((s) => [
+        s.id,
+        s.itemName || 'General Sale',
+        s.total,
+        s.paymentMethod,
+        s.status,
+        s.verified ? 'Yes' : 'No',
+        s.synced === 1 ? 'Yes' : 'No',
+        new Date(s.createdAt).toLocaleString(),
+      ]);
       const csvContent = [headers, ...rows].map((r) => r.join(',')).join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
@@ -48,15 +60,39 @@ const Settings = () => {
   };
 
   const settingsOptions = [
-    { label: 'Store Profile', sub: user?.businessName || 'My Store', iconBg: '#EEF4FF', action: 'profile', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#185FA5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
-    { label: 'Sync Settings', sub: 'Auto-sync every 30 seconds', iconBg: '#F0FDF4', action: 'sync', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#15803D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> },
-    { label: 'Export Data', sub: 'Download all sales as CSV', iconBg: '#F5F3FF', action: 'export', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> },
-    { label: 'Help & Support', sub: 'Contact us via email', iconBg: '#FFF7ED', action: 'support', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EA580C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
+    {
+      label: 'Store Profile',
+      sub: user?.businessName || 'My Store',
+      iconBg: '#EEF4FF',
+      action: 'profile',
+      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#185FA5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+    },
+    {
+      label: 'Sync Settings',
+      sub: 'Auto-sync every 30 seconds',
+      iconBg: '#F0FDF4',
+      action: 'sync',
+      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#15803D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>,
+    },
+    {
+      label: 'Export Data',
+      sub: 'Download all sales as CSV',
+      iconBg: '#F5F3FF',
+      action: 'export',
+      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+    },
+    {
+      label: 'Help & Support',
+      sub: 'support@paytracklite.com',
+      iconBg: '#FFF7ED',
+      action: 'support',
+      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EA580C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+    },
   ];
 
   const handleOption = (action) => {
     if (action === 'export') handleExportCSV();
-    if (action === 'support') window.open('mailto:support@paytracklite.com', '_blank');
+    if (action === 'support') setShowSupport(!showSupport);
     if (action === 'profile') fileInputRef.current?.click();
     if (action === 'sync') alert('Auto-sync is enabled. Sales sync every 30 seconds when online.');
   };
@@ -84,7 +120,9 @@ const Settings = () => {
           <div>
             <p className="font-black text-[#0F172A] text-lg">{user?.businessName || 'My Store'}</p>
             <p className="text-slate-400 text-xs font-medium">{user?.email || ''}</p>
-            <button onClick={() => fileInputRef.current?.click()} className="text-[#2F5FB3] text-xs font-bold mt-1">Change photo</button>
+            <button onClick={() => fileInputRef.current?.click()} className="text-[#2F5FB3] text-xs font-bold mt-1">
+              Tap to change photo
+            </button>
           </div>
         </div>
       </div>
@@ -105,13 +143,25 @@ const Settings = () => {
         ))}
       </div>
 
+      {showSupport && (
+        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4">
+          <p className="text-orange-800 font-bold text-sm mb-1">Contact Support</p>
+          <p className="text-orange-600 text-xs mb-3">Send us an email and we will respond within 24 hours.</p>
+          <a href="mailto:support@paytracklite.com" className="bg-orange-500 text-white text-sm font-bold px-4 py-2 rounded-xl inline-block">
+            support@paytracklite.com
+          </a>
+        </div>
+      )}
+
       {exportStatus && (
         <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3">
           <p className="text-green-700 text-sm font-medium text-center">{exportStatus}</p>
         </div>
       )}
 
-      <button onClick={logout} className="w-full py-4 text-red-500 font-bold bg-red-50 rounded-2xl border border-red-100 active:scale-95 transition-transform">Log Out</button>
+      <button onClick={logout} className="w-full py-4 text-red-500 font-bold bg-red-50 rounded-2xl border border-red-100 active:scale-95 transition-transform">
+        Log Out
+      </button>
       <p className="text-center text-[#CBD5E1] text-[10px] font-bold uppercase tracking-widest">PayTrack Lite v1.0.4</p>
     </div>
   );
