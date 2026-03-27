@@ -55,7 +55,13 @@ const Login = () => {
       }
 
       setTimeout(() => {
-        login(formData.email, formData.businessName, formData.password);
+        try {
+          login(formData.email, formData.businessName, formData.password);
+        } catch (err) {
+          setError(err.message || 'Login failed.');
+          setLoading(false);
+          return;
+        }
         setLoading(false);
       }, 1000);
 

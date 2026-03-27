@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { db } from '../db/dexie';
 
+const BACKEND_URL = 'https://paytrack-lite-backend.onrender.com';
+const API_KEY = import.meta.env.VITE_API_KEY || '';
+
 export const useStore = create(
   persist(
     (set, get) => ({
@@ -10,16 +13,23 @@ export const useStore = create(
       user: null,
 
       login: (email, businessName, password) => {
-        set({
-          isAuthenticated: true,
-          user: {
+        const allUsers = JSON.parse(localStorage.getItem('paytrack-users') || '{}');
+        if (allUsers[email.toLowerCase()]) {
+          if (allUsers[email.toLowerCase()].password !== password) {
+            throw new Error('Incorrect PIN.');
+          }
+        } else {
+          allUsers[email.toLowerCase()] = {
             email,
             businessName,
             password,
             id: `user-${Date.now()}`,
             profileImage: null,
-          },
-        });
+          };
+          localStorage.setItem('paytrack-users', JSON.stringify(allUsers));
+        }
+        const user = allUsers[email.toLowerCase()];
+        set({ isAuthenticated: true, user });
         get().init();
       },
 
@@ -72,7 +82,7 @@ export const useStore = create(
           await db.sales.add(sale);
           set((state) => ({
             sales: [sale, ...state.sales],
-            transactions: [sale, ...state.sales],
+            transactions: [sale, ...state.transactions], // ✅ fixed: was state.sales
           }));
           if (navigator.onLine) {
             get().syncSale(sale);
@@ -85,9 +95,12 @@ export const useStore = create(
 
       syncSale: async (sale) => {
         try {
-          const response = await fetch('https://paytrack-lite-backend.onrender.com/api/sales/sync', {
+          const response = await fetch(`${BACKEND_URL}/api/sales/sync`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              ...(API_KEY && { 'x-api-key': API_KEY }),
+            },
             body: JSON.stringify({ sales: [sale] }),
           });
           if (response.ok) {
