@@ -3,6 +3,15 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const mongoose = require('mongoose');
+const crypto = require('crypto');
+
+// ── Startup env validation ──
+['MONGODB_URI', 'INTERSWITCH_CLIENT_ID', 'INTERSWITCH_CLIENT_SECRET'].forEach((key) => {
+  if (!process.env[key]) {
+    console.error(`❌ Missing required env variable: ${key}`);
+    process.exit(1);
+  }
+});
 
 const app = express();
 app.use(cors());
@@ -35,6 +44,49 @@ const ISW_CLIENT_SECRET = process.env.INTERSWITCH_CLIENT_SECRET;
 const MERCHANT_CODE     = process.env.MERCHANT_CODE || 'MX180495';
 const ISW_BASE_URL      = process.env.ISW_BASE_URL || 'https://qa.interswitchng.com';
 const ISW_AUTH          = Buffer.from(`${ISW_CLIENT_ID}:${ISW_CLIENT_SECRET}`).toString('base64');
+const ISW_WEBHOOK_SECRET = process.env.ISW_WEBHOOK_SECRET || '';
+const API_KEY           = process.env.API_KEY || '';
+const IS_PRODUCTION     = process.env.NODE_ENV === 'production';
+
+// ── Middleware: API Key protection ──
+const requireApiKey = (req, res, next) => {
+  if (!API_KEY) return next(); // skip if not set (dev mode)
+  const key = req.headers['x-api-key'];
+  if (!key || key !== API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+};
+
+// ── Middleware: Interswitch Webhook Signature Validation ──
+const validateWebhookSignature = (req, res, next) => {
+  if (!ISW_WEBHOOK_SECRET) {
+    // No secret configured — skip validation (dev only)
+    console.warn('⚠️  ISW_WEBHOOK_SECRET not set — skipping signature check');
+    return next();
+  }
+
+  const signature = req.headers['x-interswitch-signature'] || req.headers['x-paygate-signature'];
+
+  if (!signature) {
+    console.warn('❌ Webhook received with no signature header');
+    return res.status(401).json({ error: 'Missing signature' });
+  }
+
+  // Interswitch signs: HMAC-SHA512 of raw body using your webhook secret
+  const rawBody = JSON.stringify(req.body);
+  const expectedSignature = crypto
+    .createHmac('sha512', ISW_WEBHOOK_SECRET)
+    .update(rawBody)
+    .digest('hex');
+
+  if (signature !== expectedSignature) {
+    console.warn('❌ Webhook signature mismatch — possible spoofed request');
+    return res.status(401).json({ error: 'Invalid signature' });
+  }
+
+  next();
+};
 
 // ── Get Interswitch Access Token ──
 const getAccessToken = async () => {
@@ -101,8 +153,9 @@ app.get('/', (req, res) => {
 // ────────────────────────────────────────────
 // WEBHOOK — Interswitch sends this automatically
 // when a real transaction completes (live mode)
+// NOW PROTECTED: signature validation applied
 // ────────────────────────────────────────────
-app.post('/webhook/interswitch', async (req, res) => {
+app.post('/webhook/interswitch', validateWebhookSignature, async (req, res) => {
   // Always respond 200 fast so Interswitch doesn't retry
   res.status(200).json({ received: true });
 
@@ -139,11 +192,16 @@ app.post('/webhook/interswitch', async (req, res) => {
 });
 
 // ────────────────────────────────────────────
-// TEST WEBHOOK — Use this to demo verification
-// during presentations (test mode only)
-// POST /webhook/test  body: { reference, amount }
+// TEST WEBHOOK — DISABLED IN PRODUCTION
+// Only available when NODE_ENV !== 'production'
 // ────────────────────────────────────────────
-app.post('/webhook/test', async (req, res) => {
+app.post('/webhook/test', (req, res, next) => {
+  if (IS_PRODUCTION) {
+    console.warn('⛔ /webhook/test called in production — blocked');
+    return res.status(404).json({ error: 'Not found' });
+  }
+  next();
+}, async (req, res) => {
   try {
     const { reference, amount } = req.body;
 
@@ -179,8 +237,9 @@ app.post('/webhook/test', async (req, res) => {
 
 // ────────────────────────────────────────────
 // SYNC — Frontend sends sales here to verify
+// NOW PROTECTED: API key required
 // ────────────────────────────────────────────
-app.post('/api/sales/sync', async (req, res) => {
+app.post('/api/sales/sync', requireApiKey, async (req, res) => {
   const { sales } = req.body;
 
   if (!sales || sales.length === 0) {
@@ -281,8 +340,8 @@ app.post('/api/sales/sync', async (req, res) => {
   return res.json(results);
 });
 
-// ── Get all sales ──
-app.get('/api/sales', async (req, res) => {
+// ── Get all sales — PROTECTED ──
+app.get('/api/sales', requireApiKey, async (req, res) => {
   try {
     const sales = await Sale.find().sort({ syncedAt: -1 });
     res.json(sales);
@@ -291,8 +350,8 @@ app.get('/api/sales', async (req, res) => {
   }
 });
 
-// ── Get single sale by reference ──
-app.get('/api/sales/reference/:ref', async (req, res) => {
+// ── Get single sale by reference — PROTECTED ──
+app.get('/api/sales/reference/:ref', requireApiKey, async (req, res) => {
   try {
     const sale = await Sale.findOne({ reference: req.params.ref });
     if (!sale) return res.status(404).json({ error: 'Sale not found' });
@@ -305,8 +364,11 @@ app.get('/api/sales/reference/:ref', async (req, res) => {
 // ────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 PayTrack Lite Backend running on port ${PORT}`);
-  console.log(`🔑 Client ID: ${ISW_CLIENT_ID?.slice(0, 8)}...`);
-  console.log(`🏪 Merchant Code: ${MERCHANT_CODE}`);
-  console.log(`🌍 Mode: ${ISW_BASE_URL.includes('qa') ? 'TEST MODE' : 'LIVE MODE'}`);
+  console.log(` PayTrack Lite Backend running on port ${PORT}`);
+  console.log(` Client ID: ${ISW_CLIENT_ID?.slice(0, 8)}...`);
+  console.log(` Merchant Code: ${MERCHANT_CODE}`);
+  console.log(` Mode: ${ISW_BASE_URL.includes('qa') ? 'TEST MODE' : 'LIVE MODE'}`);
+  console.log(` API Key protection: ${API_KEY ? 'Enabled' : '  Disabled (set API_KEY in .env)'}`);
+  console.log(`🪝 Webhook signature: ${ISW_WEBHOOK_SECRET ? ' Enabled' : ' Disabled (set ISW_WEBHOOK_SECRET in .env)'}`);
+  console.log(` Test webhook: ${IS_PRODUCTION ? ' Blocked (production)' : ' Available (dev)'}`);
 });
