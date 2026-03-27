@@ -1,40 +1,51 @@
 import React, { useState } from 'react';
-import { X, Save, CreditCard, Smartphone, Banknote, CheckCircle, AlertTriangle } from 'lucide-react';
+import { X, CheckCircle, CreditCard, Smartphone, Banknote } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
 const NewSale = ({ onBack }) => {
   const { addSale } = useStore();
-  
+
   const [itemName, setItemName] = useState('');
   const [total, setTotal] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [reference, setReference] = useState('');
   const [isDraft, setIsDraft] = useState(false);
 
-  // Validation Logic
+  // ── Clean reference — strip "Session Id:", spaces, labels ──
+  const cleanReference = (raw) => {
+    return raw
+      .replace(/session\s*id\s*:/gi, '')   // remove "Session Id:"
+      .replace(/rrn\s*:/gi, '')             // remove "RRN:"
+      .replace(/ref\s*:/gi, '')             // remove "Ref:"
+      .replace(/reference\s*:/gi, '')       // remove "Reference:"
+      .trim();                              // remove spaces
+  };
+
+  const handleReferenceChange = (e) => {
+    const cleaned = cleanReference(e.target.value);
+    setReference(cleaned);
+  };
+
   const isInvalid = (!total || total <= 0) || (paymentMethod !== 'cash' && !reference);
 
   const handleSubmit = (e) => {
     if (e) e.preventDefault();
-    
-    // If the button is tapped but invalid, we show why
+
     if (isInvalid) {
       alert("Please enter an amount. For Transfer/POS, a Reference ID is required.");
       return;
     }
 
-    // Try to save
     try {
       addSale({
         itemName: itemName || "General Sale",
         total: parseFloat(total),
         paymentMethod,
-        reference: paymentMethod === 'cash' ? null : reference,
+        reference: paymentMethod === 'cash' ? null : cleanReference(reference),
         status: isDraft ? 'draft' : 'completed',
       });
-      
-      // SUCCESS: Go back to dashboard
-      onBack(); 
+
+      onBack();
     } catch (err) {
       console.error("Sale Error:", err);
       alert("Store Error: Could not save sale.");
@@ -58,7 +69,7 @@ const NewSale = ({ onBack }) => {
         {/* ITEM NAME */}
         <div className="space-y-2">
           <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Items Sold</label>
-          <input 
+          <input
             type="text"
             value={itemName}
             onChange={(e) => setItemName(e.target.value)}
@@ -70,8 +81,8 @@ const NewSale = ({ onBack }) => {
         {/* AMOUNT */}
         <div className="space-y-2">
           <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Total Amount (₦)</label>
-          <input 
-            type="number" 
+          <input
+            type="number"
             required
             value={total}
             onChange={(e) => setTotal(e.target.value)}
@@ -105,24 +116,32 @@ const NewSale = ({ onBack }) => {
         {/* REFERENCE FIELD */}
         {paymentMethod !== 'cash' && (
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-red-500">Reference / Session ID (Required)</label>
-            <input 
+            <label className="text-[10px] font-black uppercase text-red-500">
+              Reference / Session ID (Required)
+            </label>
+            <input
               required
               value={reference}
-              onChange={(e) => setReference(e.target.value)}
+              onChange={handleReferenceChange}
               className="w-full p-4 rounded-2xl border-2 border-red-50 focus:border-[#2F5FB3] outline-none font-mono"
-              placeholder="Enter RRN or ID..."
+              placeholder="Paste reference number here..."
             />
+            {/* Show cleaned preview */}
+            {reference && (
+              <p className="text-[10px] text-green-600 font-mono ml-1">
+                ✅ Cleaned: {reference}
+              </p>
+            )}
           </div>
         )}
       </form>
 
-      {/* ACTION BUTTON - INSIDE DIV FOR BETTER TAPPING */}
+      {/* ACTION BUTTON */}
       <div className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-slate-100 z-50">
-        <button 
+        <button
           type="button"
           onClick={handleSubmit}
-          className={`w-full py-5 rounded-[2rem] font-black text-white shadow-xl transition-all flex items-center justify-center gap-2 
+          className={`w-full py-5 rounded-[2rem] font-black text-white shadow-xl transition-all flex items-center justify-center gap-2
             ${isInvalid ? 'bg-slate-300' : 'bg-[#2F5FB3] active:scale-95'}`}
         >
           <CheckCircle size={20} />
