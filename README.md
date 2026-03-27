@@ -1,43 +1,22 @@
 # PayTrack Lite
 
-An offline-first POS and payment verification app for Nigerian merchants.
+Offline-first POS system with Interswitch payment verification.
 
-## Problem
-Nigerian merchants lose money daily to fake transfer screenshots and unverified POS payments.
+## Live URL
+https://your-netlify-url.netlify.app
 
-## Solution
-PayTrack Lite lets merchants record every sale offline, then automatically verifies transfers and POS payments through the Interswitch Transaction Search API when online.
+## Backend Repo
+https://github.com/paytrack1/paytrack-lite-backend
 
-## Features
-- Record sales offline (works with zero internet)
-- Auto-sync and verify payments via Interswitch API
-- Fake transfer detection
-- Sales history with weekly chart
-- Export sales data as CSV
-- PWA — installable on any device
-- MongoDB cloud backup
+## Test Login
+- Email: test@paytrack.com
+- Business Name: Test Store
+- PIN: 1234
 
-## Tech Stack
-- Frontend: React, Zustand, Dexie (IndexedDB), TailwindCSS, Vite PWA
-- Backend: Node.js, Express, Mongoose
-- Database: MongoDB Atlas + IndexedDB (offline)
-- Payment Verification: Interswitch Transaction Search API
+## How it works
+1. Record sales offline (cash, transfer, POS)
+2. Transfer/POS sales verified via Interswitch API
+3. All sales synced to MongoDB Atlas
 
-## Live Links
-- Frontend: https://paytracklite.vercel.app
-- Backend: https://paytrack-lite-backend.onrender.com
-
-## Team
-- Chibueze Ebubechukwu Peter — Full Stack (Frontend + Backend)
-
-## How to Run Locally
-```bash
-# Frontend
-npm install
-npm run dev
-
-# Backend
-cd paytrack-lite-backend
-npm install
-node index.js
-```
+## Backend
+Deployed on Render.com
