@@ -117,8 +117,9 @@ export const useStore = create(
       },
 
       syncPending: async () => {
+        if (!navigator.onLine) return;
         const { sales, syncSale } = get();
-        const pending = sales.filter((s) => s.status === 'completed' && s.synced === 0);
+        const pending = sales.filter((s) => s.synced === 0 && s.paymentMethod !== 'cash');
         if (pending.length === 0) return;
         for (const sale of pending) {
           await syncSale(sale);
