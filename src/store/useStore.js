@@ -69,14 +69,16 @@ export const useStore = create(
       },
 
       addSale: async (newSale) => {
+        const isCash = newSale.paymentMethod === 'cash';
         const sale = {
           ...newSale,
           id: `sale-${Date.now()}`,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           createdAt: new Date().toISOString(),
-          synced: 0,
-          verified: false,
-          provider: null,
+          synced: isCash ? 1 : 0,
+          verified: isCash ? true : false,
+          status: isCash ? 'completed' : 'pending',
+          provider: isCash ? 'cash' : null,
         };
         try {
           await db.sales.add(sale);
