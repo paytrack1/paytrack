@@ -69,16 +69,15 @@ export const useStore = create(
       },
 
       addSale: async (newSale) => {
-        const isCash = newSale.paymentMethod === 'cash';
         const sale = {
           ...newSale,
           id: `sale-${Date.now()}`,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           createdAt: new Date().toISOString(),
-          synced: isCash ? 1 : 0,
-          verified: isCash ? true : false,
-          status: isCash ? 'completed' : 'pending',
-          provider: isCash ? 'cash' : null,
+          synced: 0,
+          verified: false,
+          status: 'pending',
+          provider: null,
         };
         try {
           await db.sales.add(sale);
@@ -96,6 +95,7 @@ export const useStore = create(
       },
 
       syncSale: async (sale) => {
+        if (!navigator.onLine) return;
         try {
           const response = await fetch(`${BACKEND_URL}/api/sales/sync`, {
             method: 'POST',
