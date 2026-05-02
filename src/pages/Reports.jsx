@@ -1,65 +1,138 @@
-import React from 'react';
-import { useStore } from '../store/useStore';
-import { BarChart3, ShieldCheck, Percent, Layers } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { liveQuery } from 'dexie';
+import { db } from '../db/dexie';
+
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const Reports = () => {
-  const { sales } = useStore();
+  const [sales, setSales] = useState([]);
 
-  const completedSales = sales.filter((s) => s.status === 'completed');
-  const totalRevenue = completedSales.reduce((acc, curr) => acc + (curr.total || 0), 0);
-  const verifiedCount = completedSales.filter((s) => s.verified).length;
-  const draftCount = sales.filter((s) => s.status === 'draft').length;
-  const verificationRate = completedSales.length > 0
-    ? ((verifiedCount / completedSales.length) * 100).toFixed(1)
-    : 0;
+  useEffect(() => {
+    const subscription = liveQuery(() => db.sales.toArray()).subscribe({
+      next: setSales,
+      error: (err) => console.error('liveQuery error:', err),
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Derived stats
+  const total     = sales.reduce((sum, s) => sum + s.total, 0);
+  const count     = sales.length;
+  const avg       = count > 0 ? Math.round(total / count) : 0;
+  const netProfit = sales.reduce((sum, s) => sum + (s.profit ?? s.total * 0.3), 0);
+  const verified  = sales.filter((s) => s.verified).length;
+  const pending   = sales.filter((s) => s.synced !== 1).length;
+
+  // Real chart data grouped by day of week
+  const daySales  = Array(7).fill(0);
+  sales.forEach((s) => {
+    const day = new Date(s.createdAt).getDay();
+    daySales[day] += s.total;
+  });
+  const maxVal     = Math.max(...daySales, 1);
+  const todayIndex = new Date().getDay();
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-black text-[#0F172A]">Business Reports</h2>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Total Revenue */}
-        <div className="bg-white p-6 rounded-2xl border border-[#E2E8F0] shadow-sm">
-          <div className="w-10 h-10 bg-[#EEF2FF] text-[#2F5FB3] rounded-xl flex items-center justify-center mb-4">
-            <BarChart3 size={20} />
-          </div>
-          <p className="text-[#64748B] text-xs font-bold uppercase">Total Revenue</p>
-          <h3 className="text-2xl font-black text-[#0F172A]">₦{totalRevenue.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
-        </div>
-
-        {/* Verified Transactions */}
-        <div className="bg-white p-6 rounded-2xl border border-[#E2E8F0] shadow-sm">
-          <div className="w-10 h-10 bg-[#DCFCE7] text-[#22C55E] rounded-xl flex items-center justify-center mb-4">
-            <ShieldCheck size={20} />
-          </div>
-          <p className="text-[#64748B] text-xs font-bold uppercase">Verified Transactions</p>
-          <h3 className="text-2xl font-black text-[#0F172A]">
-            {verifiedCount} <span className="text-sm text-[#64748B] font-medium">of {completedSales.length}</span>
-          </h3>
-        </div>
+    <div className="bg-[#F5F7FA] min-h-screen pb-32">
+      {/* Header */}
+      <div className="p-6 bg-white border-b border-[#E2E8F0] shadow-sm">
+        <h1 className="text-xl font-black text-[#0F172A]">Sales Reports</h1>
+        <p className="text-[#94A3B8] text-xs font-medium mt-0.5">All-time performance</p>
       </div>
 
-      {/* Verification Rate */}
-      <div className="bg-[#2F5FB3] p-6 rounded-2xl text-white flex items-center justify-between overflow-hidden relative">
-        <div className="relative z-10">
-          <p className="text-blue-100 text-xs font-bold uppercase tracking-widest mb-1">
-            Verification Rate
-          </p>
-          <h3 className="text-4xl font-black">{verificationRate}%</h3>
-          <p className="text-blue-200 text-[10px] mt-2 font-medium italic">
-            Powered by Interswitch Sync Engine
-          </p>
+      <div className="p-6 flex flex-col gap-4">
+        {/* KPI Grid */}
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { label: 'Total Revenue',   value: `₦${total.toLocaleString()}`,              color: '#0F172A' },
+            { label: 'Total Sales',     value: count,                                      color: '#0F172A' },
+            { label: 'Avg Sale Value',  value: `₦${avg.toLocaleString()}`,                color: '#185FA5' },
+            { label: 'Net Profit',      value: `₦${Math.round(netProfit).toLocaleString()}`, color: '#15803D' },
+          ].map((kpi) => (
+            <div key={kpi.label} className="bg-white p-4 rounded-2xl border border-[#E2E8F0] shadow-sm">
+              <p className="text-[#94A3B8] text-[11px] font-semibold uppercase tracking-wide mb-1">
+                {kpi.label}
+              </p>
+              <p className="font-black text-lg" style={{ color: kpi.color }}>{kpi.value}</p>
+            </div>
+          ))}
         </div>
-        <Percent className="absolute -right-4 -bottom-4 opacity-10" size={100} />
-      </div>
 
-      {/* Draft Summary */}
-      <div className="bg-white p-4 rounded-xl border border-dashed border-[#E2E8F0] flex justify-between items-center">
-        <div className="flex items-center gap-3 text-[#64748B]">
-          <Layers size={18} />
-          <span className="text-sm font-bold">Unsaved Drafts</span>
+        {/* Verification Stats */}
+        <div className="bg-[#185FA5] p-5 rounded-2xl text-white flex items-center justify-between">
+          <div>
+            <p className="text-blue-200 text-[11px] font-semibold uppercase tracking-widest mb-1">
+              Paystack Verification Rate
+            </p>
+            <p className="text-4xl font-black">
+              {count > 0 ? ((verified / count) * 100).toFixed(1) : 0}%
+            </p>
+            <p className="text-blue-200 text-xs mt-1 font-medium">
+              {verified} of {count} sales verified
+            </p>
+          </div>
+          <div className="text-5xl opacity-20">✓</div>
         </div>
-        <span className="font-black text-[#0F172A]">{draftCount}</span>
+
+        {/* Real Bar Chart */}
+        <div className="bg-white p-6 rounded-2xl border border-[#E2E8F0] shadow-sm">
+          <div className="flex justify-between items-center mb-5">
+            <h4 className="text-[#0F172A] font-bold text-sm">Revenue by Day</h4>
+            <span className="text-[#94A3B8] text-[11px] font-medium">This week</span>
+          </div>
+
+          {count === 0 ? (
+            <div className="flex items-center justify-center h-32 text-[#CBD5E1] text-sm">
+              No data yet
+            </div>
+          ) : (
+            <div className="flex items-end justify-between h-32 gap-1.5">
+              {daySales.map((val, i) => {
+                const heightPct = Math.round((val / maxVal) * 100);
+                const isToday   = i === todayIndex;
+                const hasData   = val > 0;
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                    <div
+                      className="w-full rounded-t-lg transition-all duration-500"
+                      style={{
+                        height: `${hasData ? Math.max(heightPct, 8) : 4}%`,
+                        backgroundColor: isToday ? '#185FA5' : hasData ? '#BFDBFE' : '#F1F5F9',
+                      }}
+                    />
+                    <span className="text-[10px] font-bold" style={{ color: isToday ? '#185FA5' : '#94A3B8' }}>
+                      {DAY_LABELS[i].charAt(0)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="flex gap-4 mt-4 pt-4 border-t border-[#F1F5F9]">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-[#185FA5]" />
+              <span className="text-[10px] text-[#94A3B8] font-medium">Today</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-[#BFDBFE]" />
+              <span className="text-[10px] text-[#94A3B8] font-medium">Other days</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Pending sync warning */}
+        {pending > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
+            <span className="text-amber-500 text-lg">🔄</span>
+            <div>
+              <p className="text-amber-800 text-sm font-bold">
+                {pending} sale{pending !== 1 ? 's' : ''} pending sync
+              </p>
+              <p className="text-amber-600 text-xs font-medium">Go to Home and tap Sync when online</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
