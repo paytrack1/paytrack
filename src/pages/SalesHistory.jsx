@@ -38,7 +38,7 @@ const SalesHistory = () => {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text('PayTrack Lite', 14, 15);
+    doc.text('Flowora', 14, 15);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.text('Sales Report', 14, 23);
@@ -78,7 +78,7 @@ const SalesHistory = () => {
       styles: { fontSize: 9 },
     });
 
-    doc.save(`paytrack-sales-${new Date().toISOString().slice(0, 10)}.pdf`);
+    doc.save(`flowora-sales-${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
   return (

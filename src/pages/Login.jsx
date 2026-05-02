@@ -37,7 +37,7 @@ const Login = ({ onLogin }) => {
         <div className="w-14 h-14 bg-[#185FA5] rounded-2xl flex items-center justify-center text-white font-black text-xl mx-auto mb-4">
           PT
         </div>
-        <h1 className="text-2xl font-black text-[#0F172A]">PayTrack Lite</h1>
+        <h1 className="text-2xl font-black text-[#0F172A]">Flowora</h1>
         <p className="text-[#94A3B8] text-sm font-medium mt-1">Sign in to your store</p>
       </div>
 
@@ -89,7 +89,7 @@ const Login = ({ onLogin }) => {
 
       {/* Footer */}
       <p className="text-center text-[#CBD5E1] text-[10px] font-bold uppercase tracking-widest mt-8">
-        PayTrack Lite · Secure payments via Paystack
+        Flowora · Secure payments via Paystack
       </p>
     </div>
   );

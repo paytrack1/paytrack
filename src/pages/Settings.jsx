@@ -49,7 +49,7 @@ const Settings = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `paytrack-export-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = `flowora-export-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
       setExportStatus(`Exported ${sales.length} sales successfully!`);
@@ -83,7 +83,7 @@ const Settings = () => {
     },
     {
       label: 'Help & Support',
-      sub: 'paytracklite@gmail.com',
+      sub: 'hello@floworax.com',
       iconBg: '#FFF7ED',
       action: 'support',
       icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EA580C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
@@ -147,8 +147,8 @@ const Settings = () => {
         <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4">
           <p className="text-orange-800 font-bold text-sm mb-1">Contact Support</p>
           <p className="text-orange-600 text-xs mb-3">Send us an email and we will respond within 24 hours.</p>
-          <a href="mailto:paytracklite@gmail.com" className="bg-orange-500 text-white text-sm font-bold px-4 py-2 rounded-xl inline-block">
-            paytracklite@gmail.com
+          <a href="mailto:hello@floworax.com" className="bg-orange-500 text-white text-sm font-bold px-4 py-2 rounded-xl inline-block">
+            hello@floworax.com
           </a>
         </div>
       )}
@@ -162,7 +162,7 @@ const Settings = () => {
       <button onClick={logout} className="w-full py-4 text-red-500 font-bold bg-red-50 rounded-2xl border border-red-100 active:scale-95 transition-transform">
         Log Out
       </button>
-      <p className="text-center text-[#CBD5E1] text-[10px] font-bold uppercase tracking-widest">PayTrack Lite v1.0.4</p>
+      <p className="text-center text-[#CBD5E1] text-[10px] font-bold uppercase tracking-widest">Flowora v1.0.4</p>
     </div>
   );
 };

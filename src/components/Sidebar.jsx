@@ -23,7 +23,7 @@ const Sidebar = () => {
           </div>
           <div>
             <p className="text-white font-black text-lg leading-none tracking-tight">
-              PayTrack
+              Flowora
             </p>
             <p className="text-[#2F5FB3] font-black text-sm leading-none">
               Lite

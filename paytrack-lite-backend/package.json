@@ -1,5 +1,5 @@
 {
-  "name": "paytrack-lite-backend",
+  "name": "flowora-backend",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -12,7 +12,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "PayTrack Lite backend with Interswitch verification",
+  "description": "Flowora backend - powered by Paystack",
   "dependencies": {
     "axios": "^1.13.6",
     "cors": "^2.8.6",

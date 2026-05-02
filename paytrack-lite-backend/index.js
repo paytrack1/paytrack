@@ -11,7 +11,7 @@ app.use(express.json());
 
 const PAYSTACK_SECRET_KEY     = process.env.PAYSTACK_SECRET_KEY;
 const PAYSTACK_WEBHOOK_SECRET = process.env.PAYSTACK_SECRET_KEY;
-const API_KEY                 = process.env.API_KEY || 'paytrack-dev-key';
+const API_KEY                 = process.env.API_KEY || 'flowora-dev-key';
 const PAYSTACK_BASE_URL       = 'https://api.paystack.co';
 
 const requireApiKey = (req, res, next) => {
@@ -48,7 +48,7 @@ let salesStore = {};
 
 app.get('/', (req, res) => {
   res.json({
-    service:  'PayTrack Lite Backend',
+    service:  'Flowora Backend',
     status:   'running',
     provider: 'Paystack',
     mode:     PAYSTACK_SECRET_KEY?.startsWith('sk_live') ? 'LIVE' : 'TEST',
@@ -130,7 +130,7 @@ app.get('/api/sales/reference/:ref', requireApiKey, async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`\nPayTrack Lite Backend running on port ${PORT}`);
+  console.log(`\nFlowora Backend running on port ${PORT}`);
   console.log(`Provider: Paystack`);
   console.log(`Mode: ${PAYSTACK_SECRET_KEY?.startsWith('sk_live') ? 'LIVE' : 'TEST'}\n`);
 });

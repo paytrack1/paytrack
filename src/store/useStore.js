@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { db } from '../db/dexie';
 
-const BACKEND_URL = 'https://paytrack-lite-backend.onrender.com';
+const BACKEND_URL = 'https://flowora-backend.onrender.com';
 const API_KEY = import.meta.env.VITE_API_KEY || '';
 
 export const useStore = create(
@@ -13,7 +13,7 @@ export const useStore = create(
       user: null,
 
       login: (email, businessName, password) => {
-        const allUsers = JSON.parse(localStorage.getItem('paytrack-users') || '{}');
+        const allUsers = JSON.parse(localStorage.getItem('flowora-users') || '{}');
         if (allUsers[email.toLowerCase()]) {
           if (allUsers[email.toLowerCase()].password !== password) {
             throw new Error('Incorrect PIN.');
@@ -26,7 +26,7 @@ export const useStore = create(
             id: `user-${Date.now()}`,
             profileImage: null,
           };
-          localStorage.setItem('paytrack-users', JSON.stringify(allUsers));
+          localStorage.setItem('flowora-users', JSON.stringify(allUsers));
         }
         const user = allUsers[email.toLowerCase()];
         set({ isAuthenticated: true, user });
@@ -144,7 +144,7 @@ export const useStore = create(
 
     }),
     {
-      name: 'paytrack-auth',
+      name: 'flowora-auth',
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         user: state.user,

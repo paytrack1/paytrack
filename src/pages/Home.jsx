@@ -6,7 +6,7 @@ import RevenueCard from '../components/RevenueCard';
 import TransactionItem from '../components/TransactionItem';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
-const API_KEY     = import.meta.env.VITE_API_KEY     || 'paytrack-dev-key';
+const API_KEY     = import.meta.env.VITE_API_KEY     || 'flowora-dev-key';
 
 const Home = ({ onNavigateToSale }) => {
   const isOnline = useOnline();

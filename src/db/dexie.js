@@ -1,7 +1,7 @@
 import Dexie from 'dexie';
 
 // Initialize the Database
-export const db = new Dexie('PayTrackLiteDB');
+export const db = new Dexie('FloworaDB');
 
 /**
  * SCHEMA DEFINITION
