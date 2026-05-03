@@ -2,153 +2,132 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { db } from '../db/dexie';
 
-const BACKEND_URL = 'https://flowora-backend.onrender.com';
-const API_KEY = import.meta.env.VITE_API_KEY || '';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+
+const authHeaders = (token) => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${token}`,
+});
 
 export const useStore = create(
   persist(
     (set, get) => ({
-
       isAuthenticated: false,
       user: null,
-
-      login: (email, businessName, password) => {
-        const allUsers = JSON.parse(localStorage.getItem('flowora-users') || '{}');
-        if (allUsers[email.toLowerCase()]) {
-          if (allUsers[email.toLowerCase()].password !== password) {
-            throw new Error('Incorrect PIN.');
-          }
-        } else {
-          allUsers[email.toLowerCase()] = {
-            email,
-            businessName,
-            password,
-            id: `user-${Date.now()}`,
-            profileImage: null,
-          };
-          localStorage.setItem('flowora-users', JSON.stringify(allUsers));
-        }
-        const user = allUsers[email.toLowerCase()];
-        set({ isAuthenticated: true, user });
-        get().init();
-      },
-
-      logout: () => {
-        set({
-          isAuthenticated: false,
-          user: null,
-          sales: [],
-          transactions: [],
-          activeTab: 'home',
-          isSaleModalOpen: false,
-        });
-      },
-
-      setProfileImage: (imageBase64) => {
-        set((state) => ({
-          user: { ...state.user, profileImage: imageBase64 },
-        }));
-      },
-
+      token: null,
+      authError: null,
       activeTab: 'home',
-      setActiveTab: (tab) => set({ activeTab: tab }),
-
       isSaleModalOpen: false,
-      setSaleModal: (val) => set({ isSaleModalOpen: val }),
-
       sales: [],
       transactions: [],
 
-      init: async () => {
+      register: async (email, businessName, password) => {
+        set({ authError: null });
         try {
-          const savedSales = await db.sales.orderBy('createdAt').reverse().toArray();
-          set({ sales: savedSales, transactions: savedSales });
-        } catch (err) {
-          console.error('Failed to load sales from DB:', err);
-        }
+          const res = await fetch(`${BACKEND_URL}/api/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, businessName, password }),
+          });
+          const data = await res.json();
+          if (!res.ok) { set({ authError: data.error || 'Registration failed' }); throw new Error(data.error); }
+          set({ isAuthenticated: true, user: data.user, token: data.token, authError: null });
+          await get().init();
+          return data;
+        } catch (err) { set({ authError: err.message }); throw err; }
       },
 
-      addSale: async (newSale) => {
+      login: async (email, password) => {
+        set({ authError: null });
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+          });
+          const data = await res.json();
+          if (!res.ok) { set({ authError: data.error || 'Login failed' }); throw new Error(data.error); }
+          set({ isAuthenticated: true, user: data.user, token: data.token, authError: null });
+          await get().init();
+          return data;
+        } catch (err) { set({ authError: err.message }); throw err; }
+      },
+
+      logout: () => {
+        set({ isAuthenticated: false, user: null, token: null, sales: [], transactions: [], activeTab: 'home', isSaleModalOpen: false, authError: null });
+      },
+
+      setProfileImage: (imageUrl) => {
+        set((state) => ({ user: { ...state.user, profileImage: imageUrl } }));
+      },
+
+      clearAuthError: () => set({ authError: null }),
+      setActiveTab: (tab) => set({ activeTab: tab }),
+      setSaleModal: (open) => set({ isSaleModalOpen: open }),
+
+      init: async () => {
+        try {
+          const allSales = await db.sales.orderBy('createdAt').reverse().toArray();
+          set({ sales: allSales, transactions: allSales });
+        } catch (err) { console.error('Failed to load sales:', err); }
+      },
+
+      addSale: async (saleData) => {
+        const { token, syncSale } = get();
         const sale = {
-          ...newSale,
+          ...saleData,
           id: `sale-${Date.now()}`,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           createdAt: new Date().toISOString(),
           synced: 0,
           verified: false,
-          status: 'pending',
           provider: null,
         };
         try {
           await db.sales.add(sale);
-          set((state) => ({
-            sales: [sale, ...state.sales],
-            transactions: [sale, ...state.transactions], // ✅ fixed: was state.sales
-          }));
-          if (navigator.onLine) {
-            get().syncSale(sale);
-          }
-        } catch (err) {
-          console.error('Failed to save sale:', err);
-          throw err;
-        }
+          set((state) => ({ sales: [sale, ...state.sales], transactions: [sale, ...state.transactions] }));
+          if (navigator.onLine && token) await syncSale(sale);
+        } catch (err) { console.error('Failed to save sale:', err); throw err; }
       },
 
       syncSale: async (sale) => {
-        if (!navigator.onLine) return;
+        const { token, setVerificationStatus } = get();
+        if (!token) return;
         try {
-          const response = await fetch(`${BACKEND_URL}/api/sales/sync`, {
+          const res = await fetch(`${BACKEND_URL}/api/sales/sync`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(API_KEY && { 'x-api-key': API_KEY }),
-            },
+            headers: authHeaders(token),
             body: JSON.stringify({ sales: [sale] }),
           });
-          if (response.ok) {
-            const results = await response.json();
-            results.forEach((res) => {
-              get().setVerificationStatus(res.id, res.verified, res.provider);
-            });
+          if (res.ok) {
+            const data = await res.json();
+            for (const result of data.results || []) {
+              await setVerificationStatus(result.id, result.verified, result.provider || 'paystack');
+            }
           }
-        } catch (err) {
-          console.warn('Sync failed, will retry later:', err);
-        }
+        } catch (err) { console.warn('Sync failed:', err.message); }
       },
 
       syncPending: async () => {
-        if (!navigator.onLine) return;
-        const { sales, syncSale } = get();
+        const { sales, syncSale, token } = get();
+        if (!token) return;
         const pending = sales.filter((s) => s.synced === 0);
-        if (pending.length === 0) return;
-        for (const sale of pending) {
-          await syncSale(sale);
-        }
+        for (const sale of pending) await syncSale(sale);
       },
 
       setVerificationStatus: async (id, verified, provider) => {
         try {
           await db.sales.update(id, { synced: 1, verified, provider });
           set((state) => ({
-            sales: state.sales.map((s) =>
-              s.id === id ? { ...s, synced: 1, verified, provider } : s
-            ),
-            transactions: state.transactions.map((s) =>
-              s.id === id ? { ...s, synced: 1, verified, provider } : s
-            ),
+            sales: state.sales.map((s) => s.id === id ? { ...s, synced: 1, verified, provider } : s),
+            transactions: state.transactions.map((s) => s.id === id ? { ...s, synced: 1, verified, provider } : s),
           }));
-        } catch (err) {
-          console.error('Failed to update verification:', err);
-        }
+        } catch (err) { console.error('Failed to update verification:', err); }
       },
-
     }),
     {
       name: 'flowora-auth',
-      partialize: (state) => ({
-        isAuthenticated: state.isAuthenticated,
-        user: state.user,
-      }),
+      partialize: (state) => ({ isAuthenticated: state.isAuthenticated, user: state.user, token: state.token }),
     }
   )
 );
