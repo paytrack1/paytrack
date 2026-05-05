@@ -1,11 +1,12 @@
 import React from 'react';
-import { Home, BarChart2, FileText, Settings } from 'lucide-react';
+import { Home, BarChart2, FileText, Settings, TrendingDown } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
 const tabs = [
   { id: 'home',     label: 'Home',     icon: Home },
   { id: 'sales',    label: 'Sales',    icon: BarChart2 },
   { id: 'reports',  label: 'Reports',  icon: FileText },
+  { id: 'expenses', label: 'Expenses', icon: TrendingDown },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 

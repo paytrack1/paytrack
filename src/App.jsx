@@ -6,6 +6,7 @@ import NewSale from './pages/NewSale';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import SalesHistory from './pages/SalesHistory';
+import Expenses from './pages/Expenses';
 import Sidebar from './components/Sidebar';
 import BottomNav from './components/BottomNav';
 
@@ -30,6 +31,7 @@ const App = () => {
       case 'home':     return <Home />;
       case 'sales':    return <SalesHistory />;
       case 'reports':  return <Reports />;
+      case 'expenses': return <Expenses />;
       case 'settings': return <Settings />;
       default:         return <Home />;
     }

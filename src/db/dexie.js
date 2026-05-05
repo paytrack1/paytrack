@@ -1,35 +1,36 @@
 import Dexie from 'dexie';
 
-// Initialize the Database
 export const db = new Dexie('FloworaDB');
 
-/**
- * SCHEMA DEFINITION
- * sales: 
- * - id: Primary Key (UUID)
- * - total: Total amount of the sale
- * - items: Array of objects [{name, qty, price}]
- * - synced: 0 for Pending, 1 for Success
- * - createdAt: Timestamp for history sorting
- */
 db.version(1).stores({
-  sales: 'id, total, synced, createdAt' 
+  sales: 'id, total, synced, createdAt'
 });
 
-// Helper to get summary of today's sales
+db.version(2).stores({
+  sales: 'id, total, synced, createdAt',
+  expenses: 'id, amount, category, createdAt, synced'
+});
+
 export const getTodayStats = async () => {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
-
   const todaySales = await db.sales
     .where('createdAt')
     .above(startOfDay.toISOString())
     .toArray();
-
   const totalRevenue = todaySales.reduce((sum, s) => sum + s.total, 0);
   const txCount = todaySales.length;
-
   return { totalRevenue, txCount };
+};
+
+export const getTodayExpenses = async () => {
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+  const todayExpenses = await db.expenses
+    .where('createdAt')
+    .above(startOfDay.toISOString())
+    .toArray();
+  return todayExpenses.reduce((sum, e) => sum + e.amount, 0);
 };
 
 export default db;
